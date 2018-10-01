@@ -1,0 +1,180 @@
+---
+title: "Prob1_MA568"
+author: "Hengchang Hu"
+date: "9/29/18"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#### 1.Download data file Retinal_ISIs.txt which contains wating times in milliseconds & Plot spiking activity as **a histogram of the distribution of the times ** and as **a spike train time series ** & **Describe the spiking properties **.  
+
+
+```{r histgram, echo=FALSE}
+Retinal_ISIs <- read.table("C:/Users/hugo1/Documents/MA568/Retinal_ISIs.txt")
+
+waitingTime <- as.numeric(Retinal_ISIs[,1])
+
+hist(waitingTime, xlab = 'wating time (ms)', ylab = 'Counts', main = "Hisogram of the distribution of times") # hisogram of the distribution of times
+
+arriveTime <- rep(0,972)
+
+arriveTime[1] <- waitingTime[1]
+for (i in 1:971)
+{
+  arriveTime[i + 1] <- arriveTime[i] + waitingTime[i + 1]
+}
+
+hist(arriveTime, breaks = 1:30000, ylab = NULL, main = "Spike train time series") # spike train time series
+```
+
+#### Since the plot is too narrow, I split this dataset into 3 equal parts  
+
+
+```{r, echo=FALSE}
+hist(arriveTime[arriveTime <= 10000], breaks = 1:10000, ylab = NULL, main = "First part of Spike train time series")# First part 
+
+hist(arriveTime[arriveTime <= 20000 & arriveTime > 10000], breaks = 10000:20000, ylab = NULL, main = "Second part of Spike train time series")# Second part
+
+hist(arriveTime[arriveTime <= 30000 & arriveTime > 20000], breaks = 20000:30000, ylab = NULL, main = "Third part of Spike train time series")# Third part
+```
+
+#### My Point of View is that : This point process is well fitted in Homogeneous Poisson Point Process because of :
+* 1.The histogram of distribution of times between spiking events looks like exponential distribution; 
+* 2.Through the pictures of spike train time series, we can tell that the arrive time are kind of evenly distributed in the whole period.
+
+* * *
+
+#### 2.**Compute a 5-number summary** & **box plot for ISI distribution**  
+
+
+```{r Statistics, echo=FALSE}
+summary(waitingTime) # get min, .25 quantile, median, .75 quantile & max
+
+boxplot(waitingTime) # box plot for ISI distribution
+
+```
+
+#### 5-number summary of this data is (2, 5, 10, 44, 190) corresponding to (min, .25 quantile, median, .75 quantile, max).
+* 1.The speed going down from max value to .75 quantile value is much faster than speed going down from .75 quantile to median. That is also a feature of exponential function.
+* 2.Box plot shows that many data goes beyond the Whisker upper bound (.75 quantile + 1.5(.75 quantile - .25 quantile)). This is very common in box plot of exponential function.
+
+* * * 
+
+#### 3.**Bin the spike train data from Retinal_ISIs.txt into time bins of width 1ms., 10ms., 100ms** & **Plot time series of spike counts and distribution of spike counts as histogram for each bin width**  
+
+
+```{r echo=FALSE}
+hist(arriveTime, breaks = 1:30000, ylab = 'Counts', main = "Time series of Spike counts for 1ms width time bins") # time series of spike counts as a histogram for time bins of width 1ms
+
+hist(c(rep(1,972), rep(0,30000-972)), main = "Histogram of distribution of spike counts for 1ms width time bins", xlab = "spike counts") # distribution of spike counts as a histogram for time bins of width 1ms
+
+hist(arriveTime, breaks = seq(0,30000,10), ylab = 'counts', main = "Time series of Spike counts for 10ms width time bins") # time series of spike counts as a histogram for time bins of width 10ms
+
+hist(c(rep(0,2240), rep(1,574), rep(2,160), rep(3,26)), main = "Histogram of distribution of spike counts for 10ms width time bins", xlab = "spike counts") # distribution of spike counts as a histogram for time bins of width 10ms
+
+hist(arriveTime, breaks = seq(0,30000,100), ylab = 'counts', main = "Time series of Spike counts for 100ms width time bins") # time series of spike counts as a histogram for time bins of width 100ms
+
+hist(c(rep(0,22), rep(1,45), rep(2,59), rep(3,61), rep(4,37), rep(5,26), rep(6,23), rep(7,14), rep(8,8), rep(9,3), rep(10,1), rep(11,1)), main = "Histogram of distribution of spike counts for 100ms width time bins", xlab = "spike counts") # distribution of spike counts as a histogram for time bins of width 100ms
+```
+
+
+
+* * *  
+
+#### 4.**Plot the likelihood as a function of $\lambda$ for values of $\lambda$ between 0 Hz to 60 Hz** & **Find value $\hat\lambda_{ML}$ that maximize the likelihood** & **Provide an approximate 95% confidence interval for $\hat\lambda_{ML}$**.  
+
+
+```{r, echo = FALSE}
+loglikelihood <- function(x) 972 * log(x) - 30 * x # create a log likelihood function
+
+curve(loglikelihood, 0, 60) # plot this function for values of lambda between 0Hz to 60Hz
+
+optimize(loglikelihood, lower = 0, upper = 60, maximum = T) # get maximum value of log likelihood function
+```
+
+
+* * *  
+
+#### 5.**Plot an empirical CDF of the interspike intervals for the data** & **Plot the exponential CDF on the same plot as your empirical CDF** & **Construct a KS plot of the empirical CDF on the x-axis against the model CDF on the y-axis**  
+
+```{r, echo = FALSE}
+expCdfofWaitingTime <- function(x) 1 - exp(x / -32.4) # CDF of exponential distribution of waiting time
+
+eCDFofWaitingTime <- ecdf(waitingTime) # empirical CDF of waiting time
+
+plot(eCDFofWaitingTime(0:200), xlab = "Waiting Time (ms)", ylab = " ", main = "Empirical Distributions") # plot the empirical cdf of waiting time
+
+plot(expCdfofWaitingTime,0,200,ylab = " ", add = TRUE) # add exponential CDF to second plot
+
+ecdfPoint <- eCDFofWaitingTime(0:200) # get ecdf value for corresponding x
+
+mcdfPoint <- expCdfofWaitingTime(0:200) # get model cdf value for corresponding x
+
+diagLine <- function(x) x # create diag line function 
+
+lowerConfidenceInterval <- function(x) x - (1.36 / sqrt(972)) # confidence bounds
+
+upperConfidenceInterval <- function(x) x + (1.36 / sqrt(972))
+
+plot(x = ecdfPoint, y = mcdfPoint, type = "l", xlab = "Empirical CDF", ylab = "Model CDF", main = "KS plot") # KS plot
+
+plot(diagLine,0,1,add=TRUE)
+
+plot(lowerConfidenceInterval, 0,1,lty = 2,add=TRUE)
+
+plot(upperConfidenceInterval, 0,1,lty = 2,add=TRUE)
+
+KSstatistics <- max(abs(mcdfPoint - ecdfPoint))
+
+print(paste('KS statistics is', KSstatistics))
+
+```
+
+
+* * *  
+
+#### 6.**Construct a QQ plot of the empirical vs model quantiles**  
+
+
+```{r, echo = FALSE}
+plot(sort(waitingTime), qexp(ppoints(waitingTime), rate = 1 / 32.4), xlab = "Empirical Quantiles", ylab = "Model Quantiles", main = "QQ Plot") # Q-Q plot
+
+abline(a = 0, b = 1) # add the diag line
+
+```
+
+
+* * *  
+
+#### 7.**Compute the Fano Factor for increments process binned at 1ms, 10ms, 100ms**  
+
+
+```{r, echo = FALSE}
+dataforFFin1Ms <- c(rep(1,972), rep(0,30000-972)) # Data for increments process binned at 1ms
+
+dataforFFin10Ms <- c(rep(0,2240), rep(1,574), rep(2,160), rep(3,26)) # Data for increments process binned at 10ms
+
+dataforFFin100Ms <- c(rep(0,22), rep(1,45), rep(2,59), rep(3,61), rep(4,37), rep(5,26), rep(6,23), rep(7,14), rep(8,8), rep(9,3), rep(10,1), rep(11,1)) # Data for increments process binned at 100ms
+
+print(paste("The sample Fano Factor for the increments process binned at 1ms is ", var(dataforFFin1Ms) / mean(dataforFFin1Ms))) # FF 1ms
+
+print(paste("The 95% confidence interval of sample Fano Factor for a Poisson Process at 1ms bin length is [",qgamma(c(0.025,0.975), shape = 15000, rate = 15000)[1],",",qgamma(c(0.025,0.975), shape = 15000, rate = 15000)[2],"]")) # FF 1ms 95% confidence interval 
+ 
+print(paste("The sample Fano Factor for the increments process binned at 10ms is ", var(dataforFFin10Ms) / mean(dataforFFin10Ms))) # FF 10ms
+
+print(paste("The 95% confidence interval of sample Fano Factor for a Poisson Process at 10ms bin length is [",qgamma(c(0.025,0.975), shape = 1500, rate = 1500)[1],",",qgamma(c(0.025,0.975), shape = 1500, rate = 1500)[2],"]")) # FF 10ms 95% confidence interval 
+
+print(paste("The sample Fano Factor for the increments process binned at 100ms is ", var(dataforFFin100Ms) / mean(dataforFFin100Ms))) # FF 100ms
+
+print(paste("The 95% confidence interval of sample Fano Factor for a Poisson Process at 100ms bin length is [",qgamma(c(0.025,0.975), shape = 150, rate = 150)[1],",",qgamma(c(0.025,0.975), shape = 150, rate = 150)[2],"]")) # FF 100ms 95% confidence interval 
+```
+
+
+* * *
+
+#### 8.**Plot the autocorrelation function of the observed interspike intervals with 95% confidence bounds**
+
+```{r, echo = FALSE}
+plot(acf(waitingTime, plot = FALSE), main = "Waiting Time Autocorreslation Functions")
+```
