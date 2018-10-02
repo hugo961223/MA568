@@ -3,6 +3,7 @@ title: "Prob1_MA568"
 author: "Hengchang Hu"
 date: "9/29/18"
 output:
+  word_document: default
   html_document: default
   pdf_document: default
 ---
@@ -53,17 +54,17 @@ boxplot(waitingTime) # box plot for ISI distribution
 
 
 ```{r echo=FALSE}
-hist(arriveTime, breaks = 1:30000, xlab = 'Arrive Time (ms)', ylab = 'Counts', main = "Time series of Spike counts for 1ms width time bins") # time series of spike counts as a histogram for time bins of width 1ms
+hist(arriveTime, breaks = 1:30000, xlab = 'Arrive Time (ms)', ylab = 'Counts', main = "Time series of Spike counts(1ms)") # time series of spike counts as a histogram for time bins of width 1ms
 
-hist(c(rep(1,972), rep(0,30000-972)), breaks = seq(0,1,0.5), main = "Histogram of distribution of spike counts for 1ms width time bins", xlab = "spike counts", col = 'red') # distribution of spike counts as a histogram for time bins of width 1ms
+hist(c(rep(1,972), rep(0,30000-972)), breaks = seq(0,1,0.5), main = "Spike counts distribution(1ms)", xlab = "spike counts", col = 'red') # distribution of spike counts as a histogram for time bins of width 1ms
 
-hist(arriveTime, breaks = seq(0,30000,10), xlab = 'Arrive Time (ms)', ylab = 'counts', main = "Time series of Spike counts for 10ms width time bins") # time series of spike counts as a histogram for time bins of width 10ms
+hist(arriveTime, breaks = seq(0,30000,10), xlab = 'Arrive Time (ms)', ylab = 'counts', main = "Time series of Spike counts(10ms)") # time series of spike counts as a histogram for time bins of width 10ms
 
-hist(c(rep(0,2240), rep(1,574), rep(2,160), rep(3,26)), main = "Histogram of distribution of spike counts for 10ms width time bins", xlab = "spike counts", col = 'red') # distribution of spike counts as a histogram for time bins of width 10ms
+hist(c(rep(0,2240), rep(1,574), rep(2,160), rep(3,26)), main = "Spike counts distribution(10ms)", xlab = "spike counts", col = 'red') # distribution of spike counts as a histogram for time bins of width 10ms
 
-hist(arriveTime, breaks = seq(0,30000,100), xlab = 'Arrive Time (ms)', ylab = 'counts', main = "Time series of Spike counts for 100ms width time bins") # time series of spike counts as a histogram for time bins of width 100ms
+hist(arriveTime, breaks = seq(0,30000,100), xlab = 'Arrive Time (ms)', ylab = 'counts', main = "Time series of Spike counts(100ms)") # time series of spike counts as a histogram for time bins of width 100ms
 
-hist(c(rep(0,22), rep(1,45), rep(2,59), rep(3,61), rep(4,37), rep(5,26), rep(6,23), rep(7,14), rep(8,8), rep(9,3), rep(10,1), rep(11,1)), breaks = seq(0,11,0.5), main = "Histogram of distribution of spike counts for 100ms width time bins", xlab = "spike counts", col = 'red') # distribution of spike counts as a histogram for time bins of width 100ms
+hist(c(rep(0,22), rep(1,45), rep(2,59), rep(3,61), rep(4,37), rep(5,26), rep(6,23), rep(7,14), rep(8,8), rep(9,3), rep(10,1), rep(11,1)), breaks = seq(0,11,0.5), main = "Spike counts distribution(100ms)", xlab = "spike counts", col = 'red') # distribution of spike counts as a histogram for time bins of width 100ms
 ```
 
 #### **Conclusion: Comparing to model for increments of a Poisson process, the distribution of spike counts are long-tailed especially in 100 ms width time bins**.
@@ -96,7 +97,7 @@ plot(eCDFofWaitingTime(0:200), xlab = "Waiting Time (ms)", ylab = " ", main = "E
 
 plot(expCdfofWaitingTime,0,200,ylab = " ",col = 'red', add = TRUE) # add exponential CDF to second plot
 
-legend(100,0.4, legend = c("Empirical Distribution", "Model Distribtuion"), col = c("black", "red"), lty = 2:1)
+legend(100,0.4, legend = c("Empirical", "Model"), col = c("black", "red"), lty = 2:1)
 
 ecdfPoint <- eCDFofWaitingTime(0:200) # get ecdf value for corresponding x
 
