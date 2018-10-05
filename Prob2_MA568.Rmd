@@ -2,7 +2,34 @@
 title: "Prob2_MA568"
 author: "Hengchang Hu"
 date: "10/3/18"
-output: word_document
+output:
+  pdf_document: default
+  word_document: default
 ---
 
+#### 1.Download and load M1_spikes.csv & Create variables :T, X, Y, V, phi, spiketimes, Spikes.
 
+```{r, echo = FALSE}
+M1_spikes <- read.csv("C:/Users/hugo1/Documents/MA568/M1_spikes.csv")
+# load the csv file
+
+T <- M1_spikes$T 
+X <- M1_spikes$X
+Y <- M1_spikes$Y
+V <- M1_spikes$V
+phi <- M1_spikes$phi
+spiketimes <- subset(M1_spikes, spikes == 1, select = T)[,1]
+spikes <- M1_spikes$spikes
+# create variables
+
+hist(spiketimes, breaks = seq(1, 8200, 1), xlab = 'Time', ylab = '', main = 'Spiking activity as time series')
+# plot the spiking activity as a time series
+
+plot(x = X, y = Y, type = 'l')
+
+points(x = subset(M1_spikes, spikes == 1, select = X)[,1], y = subset(M1_spikes, spikes == 1, select = Y)[,1], col = 'red', pch = 19)
+```
+
+* * *
+
+#### 2.Occupancy-normalized histogram & 
