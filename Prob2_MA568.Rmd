@@ -19,17 +19,178 @@ Y <- M1_spikes$Y
 V <- M1_spikes$V
 phi <- M1_spikes$phi
 spiketimes <- subset(M1_spikes, spikes == 1, select = T)[,1]
+# T when spikes == 1
+
 spikes <- M1_spikes$spikes
 # create variables
 
-hist(spiketimes, breaks = seq(1, 8200, 1), xlab = 'Time', ylab = '', main = 'Spiking activity as time series')
+hist(spiketimes, breaks = seq(1, 8200, 1), xlab = 'Time (ms)', ylab = '', main = 'Spiking activity as time series')
 # plot the spiking activity as a time series
 
-plot(x = X, y = Y, type = 'l')
+plot(x = X, y = Y, xlab = 'X coordinate', ylab = 'Y coordiante', type = 'l')
 
 points(x = subset(M1_spikes, spikes == 1, select = X)[,1], y = subset(M1_spikes, spikes == 1, select = Y)[,1], col = 'red', pch = 19)
+
+spikesPhi <- subset(M1_spikes, spikes == 1, select = phi)[,1]
+# Phi when spikes == 1
+
+spikesV <- subset(M1_spikes, spikes == 1, select = V)[,1]
+# V when spikes == 1
+
+plot(x = spikesPhi, y = spikesV, pch = 19, col = 'red', xlab = 'Direction', ylab = 'Speed')
 ```
 
 * * *
 
-#### 2.Occupancy-normalized histogram & 
+#### 2.Occupancy-normalized histogram.
+
+```{r, echo = FALSE}
+onh <- array(data = NA, dim = 13)
+# create a empty array
+
+j <- 1
+
+for (i in seq(-3.5,3,0.5)) {
+  onh[j] <- sum(subset(M1_spikes, phi <= i + 0.5 & phi > i, select = spikes)[,1]) / length(subset(M1_spikes, phi <= i + 0.5 & phi > i, select = spikes)[,1])
+  j <- j + 1
+}
+# assigning fire rate
+
+plot(x = seq(-3.5,3.0,0.5), y = onh, type = 'h', lwd = 20, col = 'red', xlab = 'Direction', ylab = 'Fire rate')
+# Occupancy-normalized histogram
+```
+
+#### From the histogram, when direction of movement is in 1-1.5 radians, the neuron is most likely to fire, fire rate is 47Hz.
+
+* * * 
+
+#### 3.$\alpha = 30, \beta = 30, V_{max} = 16.1$cm/sec, Compute the likelihood of the data as a function of preferred direction, $L(\phi_{preferred})$, for a range of values for $\phi_{preferred}$.
+
+```{r, echo = FALSE}
+loglikelihood <- function(x) {
+  i <- 1
+  lambda <- 0
+  while (i <= length(spikesV)) {
+    lambda = lambda + log(30 + 30 * spikesV[i] * cos(spikesPhi[i] - x) / 16.1)
+    i <- i + 1
+  }
+  return (lambda)
+}
+# loglikelihood function except the constant value length(V) * log(30)
+
+plot(loglikelihood,from = -pi, to = pi, col = 'red', type = 'l', lwd = 5, xlab = 'Lambda preferred', ylab = 'LogLikelihood')
+# loglikelihood function plot
+
+mle_lambda <- optimize(loglikelihood, lower = -pi, upper = pi, maximum = TRUE)$maximum
+mle_lambda
+# maximum likelihood estimate
+
+fisherInfor <- 0
+for (i in 1:length(spikesPhi)) {
+  fisherInfor <- fisherInfor + spikesV[i] * cos(spikesPhi[i] - mle_lambda) / (16.1 + spikesV[i] * cos(spikesPhi[i] - mle_lambda)) + spikesV[i] * spikesV[i] * sin(spikesPhi[i] - mle_lambda) * sin(spikesPhi[i] - mle_lambda) / (16.1 + spikesV[i] * cos(spikesPhi[i] - mle_lambda)) / (16.1 + spikesV[i] * cos(spikesPhi[i] - mle_lambda))
+}
+# get FisherInformation
+
+se_lambda <- 1 / sqrt(length(spikesPhi) * fisherInfor)
+# get standard error of mle_lambda
+```
+
+#### Therefore, maximum likelihood estimate $\phi_{preferred,ML} = 1.064027$, Fisher information $I(\phi_{preferred,ML}) = 24.326$, 95% confidence interval is $[1.038214,1.089841]$.
+
+* * *
+
+#### 4.Compute $\hat{\lambda}_{ML}(t)$ & Plot $\hat{\lambda}_{ML}(t)$ as a function of time along with the spike times.
+
+```{r, echo = FALSE}
+estiFunction <- function(t) 30 + 30 * V[t] * cos(phi[t] - mle_lambda) / 16.1
+# construct lambda function of estimation 
+
+
+plot(estiFunction, from = 1, to = 8191, col = 'red', lwd = 5)
+
+abline(v = spiketimes)
+```
+
+* * * 
+
+#### 5.Plot histogram of the original interspike intervals(ISIs), and the rescaled intervals & Construct a KS plot with 95% confidence bounds for this data.
+
+```{r, echo = FALSE}
+rescaleTime <- function(i, j){
+  sum <- 0
+  for (t in i:j) {
+    sum <- sum + (30 + 30 * V[t] * cos(phi[t] - mle_lambda) / 16.1) / 1000
+  }
+  return (sum)
+}
+# return rescaled time from imputing i - 1(th) and i(th) spike time
+
+rescaledT <- array(data = NA, dim = 236)
+# create a array of length 237
+
+rescaledT[1] <- rescaleTime(1,spiketimes[1])
+for (i in 1:236) {
+  rescaledT[i + 1] <- rescaleTime(spiketimes[i], spiketimes[i + 1])
+}
+
+originIntervals <- rep(0,237)
+
+originIntervals[1] <- spiketimes[1]
+for (i in 1:236)
+{
+  originIntervals[i + 1] <- spiketimes[i + 1] - spiketimes[i]
+}
+# create originIntervals value
+
+hist(originIntervals, breaks = seq(0,200,2))
+hist(rescaledT, breaks = seq(0,6,0.05), main = 'Hist of rescaled intervals')
+
+expCdf <- function(x) 1 - exp(- x)
+# exponential(lambda = 1) CDF
+
+eCDFofRescaledT <- ecdf(rescaledT / 1000)
+
+ecdfPoints <- eCDFofRescaledT(seq(0,6,0.01))
+
+mcdfPoints <- expCdf(seq(0,6,0.01))
+
+plot(x = ecdfPoints, y = mcdfPoints, type = "l", xlab = "Empirical CDF", ylab = "Model CDF", main = "KS plot", col = 'red', lwd = 5)
+# Ks plot
+
+lowerConfidenceInterval <- function(x) x - (1.36 / sqrt(237)) # confidence bounds
+
+upperConfidenceInterval <- function(x) x + (1.36 / sqrt(237))
+
+plot(lowerConfidenceInterval, 0,1,lty = 2,add=TRUE)
+
+plot(upperConfidenceInterval, 0,1,lty = 2,add=TRUE)
+```
+
+#### This fit model pass the KS test.
+
+* * * 
+
+#### 6.Compute and plot the autocorrelation function of the rescaled intervals.
+
+```{r, echo = FALSE}
+plot(acf(rescaledT, lag.max = length(rescaledT), plot = FALSE), type = 'p', pch = 20, col = 'red')
+```
+
+#### This model almost do not have correlation structure. Therefore the independence assumption is basically a sound assumption.
+
+* * * 
+
+#### 7.Bin the rescaled event times into time bins of size 1, Compute the Fano Factor for this data & 95% confidence bounds.
+
+```{r, echo = FALSE}
+rescaledIntervals <- rep(0,237)
+
+rescaledIntervals[1] <- rescaledT[1]
+for (i in 1:236)
+{
+  rescaledIntervals[i + 1] <- rescaledIntervals[i] + rescaledT[i + 1]
+}
+# create rescaledIntervals value
+
+
+```
